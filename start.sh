@@ -2,13 +2,13 @@
 
 mkdir -p /app/data
 
-# ۱. اجرای پایتون و نمایش لاگ‌ها
+# ۱. استارت بک‌اند پایتون
 echo "🌐 Starting Flask Backend..."
-gunicorn --bind 127.0.0.1:5000 --workers 1 --threads 4 --timeout 120 --access-logfile - --error-logfile - app:app &
+gunicorn --bind 127.0.0.1:5000 --workers 1 --threads 4 --timeout 120 app:app &
 
-# ۲. دو ثانیه صبر تا پایتون کامل بالا بیاد
-sleep 2
+# ۲. کمی صبر برای آماده شدن پایتون
+sleep 3
 
-# ۳. اجرای ان‌جینکس با فایل کانفیگ خود پروژه
+# ۳. استارت ان‌جینکس
 echo "⚙️ Starting Nginx..."
 exec nginx -c /app/nginx.conf -g "daemon off;"
