@@ -1,12 +1,15 @@
 import json
 import os
 import subprocess
+import signal
 import database as db
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'xray_config.json')
+CONFIG_PATH = '/app/xray_config.json'
 XRAY_BIN = '/usr/local/bin/xray'
+PID_FILE = '/app/data/xray.pid'
 
 def apply_xray_config():
+    """ساخت فایل کانفیگ بر اساس کاربران فعال"""
     try:
         conn = db.get_db()
         active_users = conn.execute('SELECT uuid FROM users WHERE active = 1').fetchall()
@@ -37,27 +40,39 @@ def apply_xray_config():
             "outbounds": [{"protocol": "freedom"}]
         }
 
-        with open(CONFIG_PATH, 'w') as f:
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2)
     except Exception as e:
-        print(f"Error in apply_xray_config: {e}")
+        print(f"Config Write Error: {e}")
 
-def restart_xray():
-    try:
-        apply_xray_config()
-        # بستن پروسه‌های قبلی با مدیریت خطا
+def stop_xray():
+    """توقف امن هسته Xray فقط از طریق PID اختصاصی"""
+    if os.path.exists(PID_FILE):
         try:
-            subprocess.run(["pkill", "-9", "-f", "xray"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            with open(PID_FILE, 'r') as f:
+                pid = int(f.read().strip())
+            os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
+        try:
+            os.remove(PID_FILE)
         except Exception:
             pass
 
-        # استارت مجدد Xray
+def restart_xray():
+    """ری‌استارت هسته Xray بدون آسیب به پایتون"""
+    try:
+        apply_xray_config()
+        stop_xray()
+        
         if os.path.exists(XRAY_BIN):
-            subprocess.Popen(
+            proc = subprocess.Popen(
                 [XRAY_BIN, 'run', '-config', CONFIG_PATH],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            print("⚡ Xray Core reloaded successfully.")
+            with open(PID_FILE, 'w') as f:
+                f.write(str(proc.pid))
+            print(f"⚡ Xray Core started with PID: {proc.pid}")
     except Exception as e:
-        print(f"Error in restart_xray: {e}")
+        print(f"Xray Restart Error: {e}")
