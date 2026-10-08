@@ -1,13 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from functools import wraps
-import os
 import secrets
 import database as db
 import xray_manager
 
 app = Flask(__name__)
 
-# راه‌اندازی دیتابیس
+# مقداردهی اولیه
 db.init_db()
 saved_key = db.get_setting('secret_key')
 if not saved_key:
@@ -52,7 +51,7 @@ def setup():
         if username and len(password) >= 6:
             db.create_admin(username, password)
             return redirect(url_for('login'))
-        flash('اطلاعات نامعتبر است (رمز عبور حداقل ۶ کاراکتر)', 'error')
+        flash('اطلاعات نامعتبر است (رمز حداقل ۶ کاراکتر)', 'error')
     return render_template('setup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -71,22 +70,18 @@ def login():
 @setup_required
 @login_required
 def dashboard():
-    try:
-        users = db.get_all_users()
-        domain = request.host
-        total_users = len(users)
-        active_users = sum(1 for u in users if u.get('active') == 1)
+    users = db.get_all_users()
+    domain = request.host
+    total_users = len(users)
+    active_users = sum(1 for u in users if u.get('active') == 1)
 
-        return render_template(
-            'dashboard.html',
-            users=users,
-            domain=domain,
-            total_users=total_users,
-            active_users=active_users
-        )
-    except Exception as e:
-        print(f"Dashboard Error: {e}")
-        return "Internal Error", 500
+    return render_template(
+        'dashboard.html',
+        users=users,
+        domain=domain,
+        total_users=total_users,
+        active_users=active_users
+    )
 
 @app.route('/user/add', methods=['POST'])
 @login_required
@@ -95,7 +90,7 @@ def add_user():
     if name:
         db.add_user(name)
         xray_manager.restart_xray()
-        flash('کاربر با موفقیت اضافه شد', 'success')
+        flash('کاربر با موفقیت ساخته شد', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/user/delete/<int:user_id>')
