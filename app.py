@@ -7,12 +7,15 @@ import xray_manager
 
 app = Flask(__name__)
 
+# مقداردهی اولیه دیتابیس
 db.init_db()
-if not db.get_setting('secret_key'):
-    db.set_setting('secret_key', secrets.token_hex(32))
-app.secret_key = db.get_setting('secret_key')
+saved_key = db.get_setting('secret_key')
+if not saved_key:
+    saved_key = secrets.token_hex(32)
+    db.set_setting('secret_key', saved_key)
+app.secret_key = saved_key
 
-# ری‌استارت اولیه هسته Xray موقع اجرای برنامه
+# استارت هسته Xray
 try:
     xray_manager.restart_xray()
 except Exception as e:
@@ -52,7 +55,7 @@ def setup():
         if username and len(password) >= 6:
             db.create_admin(username, password)
             return redirect(url_for('login'))
-        flash('اطلاعات نامعتبر است (پسورد حداقل ۶ کاراکتر)', 'error')
+        flash('اطلاعات نامعتبر است (رمز عبور حداقل ۶ کاراکتر)', 'error')
     return render_template('setup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -64,7 +67,7 @@ def login():
         if db.verify_admin(username, password):
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
-        flash('رمز عبور یا نام کاربری نادرست است', 'error')
+        flash('نام کاربری یا رمز عبور اشتباه است', 'error')
     return render_template('login.html')
 
 @app.route('/dashboard')
@@ -72,8 +75,7 @@ def login():
 @login_required
 def dashboard():
     users = db.get_all_users()
-    domain = request.host  # دامنه به صورت خودکار شناسایی میشه
-    
+    domain = request.host
     total_users = len(users)
     active_users = sum(1 for u in users if u['active'] == 1)
 
@@ -91,7 +93,7 @@ def add_user():
     name = request.form.get('name', '').strip()
     if name:
         db.add_user(name)
-        xray_manager.restart_xray()  # بروزرسانی ترافیک Xray
+        xray_manager.restart_xray()
         flash('کاربر با موفقیت اضافه شد', 'success')
     return redirect(url_for('dashboard'))
 
@@ -114,3 +116,6 @@ def toggle_user(user_id):
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000)
