@@ -3,182 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <meta name="theme-color" content="#0a0a0f">
-    <title>داشبورد | Xray Panel</title>
+    <title>مدیریت کاربران | Xray Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="min-h-screen bg-black text-white pb-20">
+<body class="min-h-screen bg-[#07070b] text-white pb-10">
 
-    <!-- پس‌زمینه -->
-    <div class="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-indigo-900/20 -z-10"></div>
-    <div class="fixed top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl -z-10"></div>
-    <div class="fixed bottom-0 left-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl -z-10"></div>
+    <div class="fixed inset-0 bg-gradient-to-br from-purple-950/20 via-black to-indigo-950/20 -z-10"></div>
 
     <!-- هدر -->
-    <header class="sticky top-0 bg-black/60 backdrop-blur-2xl border-b border-white/5 z-40">
-        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-9 h-9 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
+    <header class="sticky top-0 bg-[#07070b]/80 backdrop-blur-xl border-b border-white/5 z-40">
+        <div class="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    🚀
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm" data-fa="پنل Xray" data-en="Xray Panel">پنل Xray</h1>
-                    <p class="text-white/40 text-xs">v1.0</p>
+                    <h1 class="font-bold text-sm" data-fa="داشبورد Xray" data-en="Xray Dashboard">داشبورد Xray</h1>
+                    <p class="text-xs text-white/40" data-fa="مدیریت کانکشن‌ها" data-en="Manage Connections">مدیریت کانکشن‌ها</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="toggleLang()" class="bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs hover:bg-white/10 transition">
-                    <span id="langBtn">🇬🇧 EN</span>
-                </button>
-                <a href="{{ url_for('logout') }}" class="bg-red-500/10 border border-red-500/20 text-red-400 rounded-full px-3 py-1.5 text-xs hover:bg-red-500/20 transition" data-fa="خروج" data-en="Logout">خروج</a>
+                <button onclick="toggleLang()" class="bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs">🌐 EN/FA</button>
+                <a href="{{ url_for('logout') }}" class="bg-red-500/10 text-red-400 border border-red-500/20 rounded-full px-3 py-1.5 text-xs" data-fa="خروج" data-en="Logout">خروج</a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-md mx-auto px-4 pt-6 space-y-4">
+    <main class="max-w-md mx-auto px-4 pt-6 space-y-6">
 
-        <!-- پیام‌های flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="bg-green-500/10 border border-green-500/30 text-green-300 text-sm rounded-xl p-3 text-center">
-                        {{ message }}
-                    </div>
-                {% endfor %}
+        <!-- کارت‌های آمار -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                <p class="text-white/40 text-xs" data-fa="کل کاربران" data-en="Total Users">کل کاربران</p>
+                <h3 class="text-2xl font-bold mt-1 text-purple-400">{{ total_users }}</h3>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                <p class="text-white/40 text-xs" data-fa="کاربران فعال" data-en="Active Users">کاربران فعال</p>
+                <h3 class="text-2xl font-bold mt-1 text-green-400">{{ active_users }}</h3>
+            </div>
+        </div>
+
+        <!-- دکمه افزودن کاربر جدید -->
+        <button onclick="openAddModal()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 py-4 rounded-2xl font-semibold shadow-lg shadow-purple-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
+            <span>➕</span>
+            <span data-fa="افزودن کاربر جدید" data-en="Add New User">افزودن کاربر جدید</span>
+        </button>
+
+        <!-- لیست کاربران -->
+        <div class="space-y-4">
+            <h3 class="font-bold text-lg flex items-center gap-2" data-fa="👥 لیست کاربران" data-en="👥 User List">👥 لیست کاربران</h3>
+            
+            {% if not users %}
+            <div class="text-center py-10 text-white/30 text-sm bg-white/5 rounded-2xl border border-white/5" data-fa="هیچ کاربری ساخته نشده است." data-en="No users created yet.">
+                هیچ کاربری ساخته نشده است.
+            </div>
             {% endif %}
-        {% endwith %}
 
-        <!-- خوش‌آمد -->
-        <div class="bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border border-purple-500/20 rounded-2xl p-5">
-            <p class="text-white/60 text-xs" data-fa="خوش آمدی 👋" data-en="Welcome 👋">خوش آمدی 👋</p>
-            <h2 class="text-xl font-bold mt-1" data-fa="سرویس شما فعال است" data-en="Your service is active">سرویس شما فعال است</h2>
-            <div class="flex items-center gap-2 mt-3">
-                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                <span class="text-green-400 text-xs" data-fa="آنلاین" data-en="Online">آنلاین</span>
+            {% for user in users %}
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-white/90">{{ user.name }}</h4>
+                        <p class="text-[10px] text-white/30 font-mono mt-1 select-all">{{ user.uuid }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- دکمه فعال/غیرفعال کردن -->
+                        <a href="{{ url_for('toggle_user_status', user_id=user.id) }}" class="px-2.5 py-1 rounded-full text-[10px] font-bold border transition {{ 'bg-green-500/10 text-green-400 border-green-500/20' if user.active == 1 else 'bg-red-500/10 text-red-400 border-red-500/20' }}">
+                            {{ 'فعال' if user.active == 1 else 'غیرفعال' }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-white/5">
+                    <!-- دکمه اشتراک -->
+                    <button onclick="showConfig('{{ user.name }}', '{{ user.uuid }}')" class="flex-1 bg-white/5 hover:bg-white/10 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1">
+                        🔑 <span data-fa="اتصال" data-en="Connect">اتصال</span>
+                    </button>
+                    <!-- دکمه حذف -->
+                    <a href="{{ url_for('delete_user', user_id=user.id) }}" onclick="return confirm('آیا از حذف این کاربر مطمئن هستید؟')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2.5 rounded-xl text-xs">
+                        🗑️
+                    </a>
+                </div>
             </div>
-        </div>
-
-        <!-- QR Code -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 class="font-semibold mb-4 flex items-center gap-2">
-                <span class="w-1 h-5 bg-purple-500 rounded-full"></span>
-                <span data-fa="کد QR کانفیگ" data-en="Config QR Code">کد QR کانفیگ</span>
-            </h3>
-            <div class="bg-white rounded-xl p-4 flex items-center justify-center">
-                <canvas id="qrcode"></canvas>
-            </div>
-            <p class="text-white/40 text-xs text-center mt-3" data-fa="با اپلیکیشن کلاینت اسکن کنید" data-en="Scan with your client app">با اپلیکیشن کلاینت اسکن کنید</p>
-        </div>
-
-        <!-- اطلاعات کانفیگ -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
-            <h3 class="font-semibold mb-2 flex items-center gap-2">
-                <span class="w-1 h-5 bg-indigo-500 rounded-full"></span>
-                <span data-fa="جزئیات اتصال" data-en="Connection Details">جزئیات اتصال</span>
-            </h3>
-
-            <div class="bg-black/40 rounded-xl p-3">
-                <p class="text-white/40 text-xs mb-1" data-fa="پروتکل" data-en="Protocol">پروتکل</p>
-                <p class="font-mono text-sm">VLESS + WS + TLS</p>
-            </div>
-
-            <div class="bg-black/40 rounded-xl p-3">
-                <p class="text-white/40 text-xs mb-1" data-fa="آدرس سرور" data-en="Server Address">آدرس سرور</p>
-                <p class="font-mono text-sm break-all">{{ domain }}</p>
-            </div>
-
-            <div class="bg-black/40 rounded-xl p-3">
-                <p class="text-white/40 text-xs mb-1">UUID</p>
-                <p class="font-mono text-xs break-all">{{ uuid }}</p>
-            </div>
-
-            <div class="bg-black/40 rounded-xl p-3">
-                <p class="text-white/40 text-xs mb-1" data-fa="مسیر WS" data-en="WS Path">مسیر WS</p>
-                <p class="font-mono text-sm">/{{ ws_path }}</p>
-            </div>
-        </div>
-
-        <!-- تنظیمات کانفیگ -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 class="font-semibold mb-3 flex items-center gap-2">
-                <span class="w-1 h-5 bg-yellow-500 rounded-full"></span>
-                <span data-fa="تنظیمات کانفیگ" data-en="Config Settings">تنظیمات کانفیگ</span>
-            </h3>
-            <form method="POST" action="{{ url_for('regenerate') }}" onsubmit="return confirmRegenerate()">
-                <button type="submit"
-                    class="w-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/20 font-semibold py-3 rounded-xl transition active:scale-95"
-                    data-fa="🔄 ساخت UUID جدید" data-en="🔄 Generate New UUID">🔄 ساخت UUID جدید</button>
-            </form>
-            <p class="text-white/40 text-xs text-center mt-3" data-fa="با ساخت UUID جدید، کانفیگ قبلی از کار میفته" data-en="New UUID will invalidate the old config">با ساخت UUID جدید، کانفیگ قبلی از کار میفته</p>
-        </div>
-
-        <!-- لینک اشتراک -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 class="font-semibold mb-3 flex items-center gap-2">
-                <span class="w-1 h-5 bg-green-500 rounded-full"></span>
-                <span data-fa="لینک اشتراک" data-en="Subscription Link">لینک اشتراک</span>
-            </h3>
-            <div class="bg-black/40 rounded-xl p-3 mb-3 max-h-24 overflow-auto">
-                <p class="font-mono text-xs text-white/70 break-all" id="vlessLink">{{ vless_link }}</p>
-            </div>
-            <button onclick="copyLink()" id="copyBtn"
-                class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-purple-500/30 transition active:scale-95"
-                data-fa="📋 کپی لینک" data-en="📋 Copy Link">📋 کپی لینک</button>
+            {% endfor %}
         </div>
 
     </main>
 
+    <!-- پاپ‌آپ ساخت کاربر جدید -->
+    <div id="addModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#0f0f15] border border-white/10 w-full max-w-sm rounded-3xl p-6 space-y-4">
+            <h3 class="font-bold text-lg text-center" data-fa="افزودن کاربر جدید" data-en="Add New User">افزودن کاربر جدید</h3>
+            <form method="POST" action="{{ url_for('add_user') }}" class="space-y-4">
+                <input type="text" name="name" required placeholder="نام کاربر (مثلاً علی)" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500">
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeAddModal()" class="flex-1 bg-white/5 py-3 rounded-xl text-sm" data-fa="انصراف" data-en="Cancel">انصراف</button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 py-3 rounded-xl text-sm font-semibold" data-fa="ثبت" data-en="Submit">ثبت</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- پاپ‌آپ نمایش کانفیگ و QR Code -->
+    <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#0f0f15] border border-white/10 w-full max-w-sm rounded-3xl p-6 space-y-4 overflow-y-auto max-h-[90vh]">
+            <h3 id="modalUserName" class="font-bold text-lg text-center text-purple-400">کاربر</h3>
+            
+            <div class="bg-white rounded-2xl p-4 flex items-center justify-center max-w-[200px] mx-auto shadow-inner">
+                <canvas id="qrcode"></canvas>
+            </div>
+
+            <div class="bg-black/50 p-3 rounded-xl">
+                <p class="text-[10px] font-mono break-all text-white/70" id="vlessLinkText"></p>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="closeConfigModal()" class="flex-1 bg-white/5 py-3 rounded-xl text-xs" data-fa="بستن" data-en="Close">بستن</button>
+                <button onclick="copyConfig()" id="copyBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 py-3 rounded-xl text-xs font-semibold" data-fa="📋 کپی لینک" data-en="📋 Copy Link">📋 کپی لینک</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const vlessLink = `{{ vless_link }}`;
+        const domain = "{{ domain }}";
+        let currentLink = "";
 
-        // ساخت QR Code
-        QRCode.toCanvas(document.getElementById('qrcode'), vlessLink, {
-            width: 220,
-            margin: 1,
-            color: { dark: '#000000', light: '#ffffff' }
-        });
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+        }
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+        }
 
-        // کپی لینک
-        function copyLink() {
-            navigator.clipboard.writeText(vlessLink);
+        function showConfig(name, uuid) {
+            document.getElementById('modalUserName').innerText = name;
+            // ساخت لینک اختصاصی VLESS
+            currentLink = `vless://${uuid}@${domain}:443?encryption=none&security=tls&type=ws&host=${domain}&path=%2Fws&sni=${domain}#${encodeURIComponent(name)}`;
+            
+            document.getElementById('vlessLinkText').innerText = currentLink;
+
+            // ساخت QR
+            QRCode.toCanvas(document.getElementById('qrcode'), currentLink, {
+                width: 180,
+                margin: 1
+            });
+
+            document.getElementById('configModal').classList.remove('hidden');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.add('hidden');
+        }
+
+        function copyConfig() {
+            navigator.clipboard.writeText(currentLink);
             const btn = document.getElementById('copyBtn');
             const isFa = document.getElementById('htmlRoot').getAttribute('lang') === 'fa';
-            const original = btn.textContent;
-            btn.textContent = isFa ? '✅ کپی شد!' : '✅ Copied!';
-            setTimeout(() => btn.textContent = original, 2000);
+            btn.innerText = isFa ? '✅ کپی شد!' : '✅ Copied!';
+            setTimeout(() => {
+                btn.innerText = isFa ? '📋 کپی لینک' : '📋 Copy Link';
+            }, 2000);
         }
 
-        // تایید ساخت UUID جدید
-        function confirmRegenerate() {
-            const isFa = document.getElementById('htmlRoot').getAttribute('lang') === 'fa';
-            const msg = isFa 
-                ? 'مطمئنی؟ کانفیگ قدیمی از کار میفته!' 
-                : 'Are you sure? The old config will stop working!';
-            return confirm(msg);
-        }
-
-        // تغییر زبان
         function toggleLang() {
             const html = document.getElementById('htmlRoot');
-            const btn = document.getElementById('langBtn');
             const isFa = html.getAttribute('lang') === 'fa';
             const newLang = isFa ? 'en' : 'fa';
-            
             html.setAttribute('lang', newLang);
             html.setAttribute('dir', isFa ? 'ltr' : 'rtl');
-            btn.textContent = isFa ? '🇮🇷 FA' : '🇬🇧 EN';
-            
             document.querySelectorAll('[data-fa]').forEach(el => {
-                el.textContent = el.getAttribute('data-' + newLang);
+                el.innerText = el.getAttribute('data-' + newLang);
             });
-            
             localStorage.setItem('lang', newLang);
         }
-
         if (localStorage.getItem('lang') === 'en') toggleLang();
     </script>
 </body>
