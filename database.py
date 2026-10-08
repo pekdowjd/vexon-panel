@@ -3,10 +3,11 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid as uuid_lib
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'panel.db')
+DB_DIR = os.path.join(os.path.dirname(__file__), 'data')
+DB_PATH = os.path.join(DB_DIR, 'panel.db')
 
 def get_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    os.makedirs(DB_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -14,7 +15,6 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    # جدول ادمین
     c.execute('''
         CREATE TABLE IF NOT EXISTS admin (
             id INTEGER PRIMARY KEY,
@@ -22,7 +22,6 @@ def init_db():
             password_hash TEXT NOT NULL
         )
     ''')
-    # جدول کاربران
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +31,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    # جدول تنظیمات
     c.execute('''
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
@@ -42,7 +40,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ===== تنظیمات عمومی =====
 def get_setting(key, default=None):
     try:
         conn = get_db()
@@ -61,12 +58,14 @@ def set_setting(key, value):
     conn.commit()
     conn.close()
 
-# ===== احراز هویت ادمین =====
 def is_setup_complete():
-    conn = get_db()
-    row = conn.execute('SELECT COUNT(*) as c FROM admin').fetchone()
-    conn.close()
-    return row['c'] > 0
+    try:
+        conn = get_db()
+        row = conn.execute('SELECT COUNT(*) as c FROM admin').fetchone()
+        conn.close()
+        return row['c'] > 0 if row else False
+    except Exception:
+        return False
 
 def create_admin(username, password):
     conn = get_db()
@@ -78,19 +77,27 @@ def create_admin(username, password):
     conn.close()
 
 def verify_admin(username, password):
-    conn = get_db()
-    row = conn.execute('SELECT * FROM admin WHERE username = ?', (username,)).fetchone()
-    conn.close()
-    if row and check_password_hash(row['password_hash'], password):
-        return True
-    return False
+    try:
+        conn = get_db()
+        row = conn.execute('SELECT * FROM admin WHERE username = ?', (username,)).fetchone()
+        conn.close()
+        if row and check_password_hash(row['password_hash'], password):
+            return True
+        return False
+    except Exception:
+        return False
 
-# ===== مدیریت کاربران Xray =====
 def get_all_users():
-    conn = get_db()
-    users = conn.execute('SELECT * FROM users ORDER BY id DESC').fetchall()
-    conn.close()
-    return users
+    try:
+        conn = get_db()
+        rows = conn.execute('SELECT * FROM users ORDER BY id DESC').fetchall()
+        # تبدیل امن داده‌ها به دیکشنری پایتون
+        users = [dict(row) for row in rows]
+        conn.close()
+        return users
+    except Exception as e:
+        print(f"DB get_all_users error: {e}")
+        return []
 
 def add_user(name):
     u_id = str(uuid_lib.uuid4())
