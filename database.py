@@ -5,19 +5,15 @@ import uuid as uuid_lib
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'panel.db')
 
-
 def get_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def init_db():
-    """ساخت جداول اولیه"""
     conn = get_db()
     c = conn.cursor()
-
     # جدول ادمین
     c.execute('''
         CREATE TABLE IF NOT EXISTS admin (
@@ -26,27 +22,31 @@ def init_db():
             password_hash TEXT NOT NULL
         )
     ''')
-
-    # جدول تنظیمات (UUID، WS_PATH، دامنه و...)
+    # جدول کاربران Xray
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            uuid TEXT UNIQUE NOT NULL,
+            active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    # جدول تنظیمات
     c.execute('''
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT
         )
     ''')
-
     conn.commit()
     conn.close()
 
-
-# ===== عملیات ادمین =====
 def is_setup_complete():
-    """آیا نصب اولیه انجام شده؟"""
     conn = get_db()
     row = conn.execute('SELECT COUNT(*) as c FROM admin').fetchone()
     conn.close()
     return row['c'] > 0
-
 
 def create_admin(username, password):
     conn = get_db()
@@ -57,7 +57,6 @@ def create_admin(username, password):
     conn.commit()
     conn.close()
 
-
 def verify_admin(username, password):
     conn = get_db()
     row = conn.execute('SELECT * FROM admin WHERE username = ?', (username,)).fetchone()
@@ -66,28 +65,32 @@ def verify_admin(username, password):
         return True
     return False
 
-
-# ===== عملیات تنظیمات =====
-def get_setting(key, default=None):
+# ===== مدیریت کاربران =====
+def get_all_users():
     conn = get_db()
-    row = conn.execute('SELECT value FROM settings WHERE key = ?', (key,)).fetchone()
+    users = conn.execute('SELECT * FROM users ORDER BY id DESC').fetchall()
     conn.close()
-    return row['value'] if row else default
+    return users
 
-
-def set_setting(key, value):
+def add_user(name):
+    u_id = str(uuid_lib.uuid4())
     conn = get_db()
-    conn.execute(
-        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
-        (key, value, value)
-    )
+    conn.execute('INSERT INTO users (name, uuid) VALUES (?, ?)', (name, u_id))
+    conn.commit()
+    conn.close()
+    return u_id
+
+def delete_user(user_id):
+    conn = get_db()
+    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
     conn.commit()
     conn.close()
 
-
-def init_default_settings():
-    """تنظیمات پیشفرض اگه نبود، بساز"""
-    if not get_setting('xray_uuid'):
-        set_setting('xray_uuid', str(uuid_lib.uuid4()))
-    if not get_setting('ws_path'):
-        set_setting('ws_path', 'xray' + str(uuid_lib.uuid4())[:8])
+def toggle_user_status(user_id):
+    conn = get_db()
+    user = conn.execute('SELECT active FROM users WHERE id = ?', (user_id,)).fetchone()
+    if user:
+        new_status = 0 if user['active'] == 1 else 1
+        conn.execute('UPDATE users SET active = ? WHERE id = ?', (new_status, user_id))
+        conn.commit()
+    conn.close()
