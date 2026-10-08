@@ -5,17 +5,19 @@ import database as db
 
 CONFIG_PATH = '/app/xray_config.json'
 XRAY_BIN = '/usr/local/bin/xray'
-xray_process = None
 
 def apply_xray_config():
-    """خواندن تمام کاربران فعال از دیتابیس و نوشتن کانفیگ Xray"""
+    """ساخت کانفیگ Xray با بررسی کاربران فعال"""
     conn = db.get_db()
     active_users = conn.execute('SELECT uuid FROM users WHERE active = 1').fetchall()
     conn.close()
 
-    clients = [{"id": u['uuid'], "flow": ""} for u in active_users]
+    # اگه کاربری نبود، یک UUID موقت میذاریم تا هسته Xray کرش نکنه
+    if not active_users:
+        clients = [{"id": "00000000-0000-0000-0000-000000000000"}]
+    else:
+        clients = [{"id": u['uuid']} for u in active_users]
 
-    # ساخت ساختار استاندارد VLESS WebSocket
     config = {
         "log": {"loglevel": "warning"},
         "inbounds": [{
@@ -29,7 +31,7 @@ def apply_xray_config():
             "streamSettings": {
                 "network": "ws",
                 "wsSettings": {
-                    "path": "/ws"  # مسیر ثابت برای ان‌جینکس
+                    "path": "/ws"
                 }
             }
         }],
@@ -40,20 +42,16 @@ def apply_xray_config():
         json.dump(config, f, indent=2)
 
 def restart_xray():
-    global xray_process
     apply_xray_config()
-    
-    # کشتن پروسه قبلی Xray
     try:
         subprocess.run(["pkill", "-f", "xray"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except:
+    except Exception:
         pass
 
-    # اجرای مجدد Xray در پس‌زمینه
     if os.path.exists(XRAY_BIN):
-        xray_process = subprocess.Popen(
+        subprocess.Popen(
             [XRAY_BIN, '-config', CONFIG_PATH],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        print("⚡ Xray Core restarted with latest database users!")
+        print("⚡ Xray Core started successfully.")
