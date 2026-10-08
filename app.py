@@ -7,7 +7,7 @@ import xray_manager
 
 app = Flask(__name__)
 
-# مقداردهی اولیه دیتابیس
+# راه‌اندازی دیتابیس
 db.init_db()
 saved_key = db.get_setting('secret_key')
 if not saved_key:
@@ -15,11 +15,8 @@ if not saved_key:
     db.set_setting('secret_key', saved_key)
 app.secret_key = saved_key
 
-# استارت هسته Xray
-try:
-    xray_manager.restart_xray()
-except Exception as e:
-    print(f"Xray start error: {e}")
+# استارت اولیه Xray
+xray_manager.restart_xray()
 
 def login_required(f):
     @wraps(f)
@@ -74,18 +71,22 @@ def login():
 @setup_required
 @login_required
 def dashboard():
-    users = db.get_all_users()
-    domain = request.host
-    total_users = len(users)
-    active_users = sum(1 for u in users if u['active'] == 1)
+    try:
+        users = db.get_all_users()
+        domain = request.host
+        total_users = len(users)
+        active_users = sum(1 for u in users if u.get('active') == 1)
 
-    return render_template(
-        'dashboard.html',
-        users=users,
-        domain=domain,
-        total_users=total_users,
-        active_users=active_users
-    )
+        return render_template(
+            'dashboard.html',
+            users=users,
+            domain=domain,
+            total_users=total_users,
+            active_users=active_users
+        )
+    except Exception as e:
+        print(f"Dashboard Error: {e}")
+        return "Internal Error", 500
 
 @app.route('/user/add', methods=['POST'])
 @login_required
