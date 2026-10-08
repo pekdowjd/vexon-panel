@@ -22,7 +22,7 @@ def init_db():
             password_hash TEXT NOT NULL
         )
     ''')
-    # جدول کاربران Xray
+    # جدول کاربران
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +42,26 @@ def init_db():
     conn.commit()
     conn.close()
 
+# ===== تنظیمات عمومی =====
+def get_setting(key, default=None):
+    try:
+        conn = get_db()
+        row = conn.execute('SELECT value FROM settings WHERE key = ?', (key,)).fetchone()
+        conn.close()
+        return row['value'] if row else default
+    except Exception:
+        return default
+
+def set_setting(key, value):
+    conn = get_db()
+    conn.execute(
+        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
+        (key, value, value)
+    )
+    conn.commit()
+    conn.close()
+
+# ===== احراز هویت ادمین =====
 def is_setup_complete():
     conn = get_db()
     row = conn.execute('SELECT COUNT(*) as c FROM admin').fetchone()
@@ -65,7 +85,7 @@ def verify_admin(username, password):
         return True
     return False
 
-# ===== مدیریت کاربران =====
+# ===== مدیریت کاربران Xray =====
 def get_all_users():
     conn = get_db()
     users = conn.execute('SELECT * FROM users ORDER BY id DESC').fetchall()
