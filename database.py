@@ -3,12 +3,12 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid as uuid_lib
 
-DB_DIR = os.path.join(os.path.dirname(__file__), 'data')
+DB_DIR = '/app/data'
 DB_PATH = os.path.join(DB_DIR, 'panel.db')
 
 def get_db():
     os.makedirs(DB_DIR, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -63,7 +63,7 @@ def is_setup_complete():
         conn = get_db()
         row = conn.execute('SELECT COUNT(*) as c FROM admin').fetchone()
         conn.close()
-        return row['c'] > 0 if row else False
+        return (row['c'] > 0) if row else False
     except Exception:
         return False
 
@@ -91,12 +91,10 @@ def get_all_users():
     try:
         conn = get_db()
         rows = conn.execute('SELECT * FROM users ORDER BY id DESC').fetchall()
-        # تبدیل امن داده‌ها به دیکشنری پایتون
         users = [dict(row) for row in rows]
         conn.close()
         return users
-    except Exception as e:
-        print(f"DB get_all_users error: {e}")
+    except Exception:
         return []
 
 def add_user(name):
